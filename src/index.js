@@ -1,21 +1,101 @@
 import 'dotenv/config';
 import cors from 'cors';
-import express from 'express';
+import express, { urlencoded } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 
 const app = express();
 const port = process.env.PORT;
 
 app.use(cors());
 
-app.get('/', (req, res) => {
-    res.send('Hello world!');
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
+//data
+let users = {
+    1: {
+        id: '1',
+        username: 'Robin Wieruch',
+    },
+    2: {
+        id: '2',
+        username: 'Dave Davids',
+    },
+};
+
+let messages = {
+    1: {
+      id: '1',
+      text: 'Hello World',
+      userId: '1',
+    },
+    2: {
+      id: '2',
+      text: 'By World',
+      userId: '2',
+    },
+};
+  
+
+//routes
+
+//use
+app.use((req, res, next) => {
+    req.me = users[1];
+
+    next();
 });
 
-app.get('/example', (req, res) => {
-    res.send('This is an example');
+//session
+app.get('/session', (req, res) => {
+    return res.send(users[req.me.id]);
+})
+
+//users
+app.get('/users', (req, res) => {
+    return res.send(Object.values(users));
+});
+
+app.get('/users/:userId', (req, res) => {
+    return res.send(users[req.params.userId]);
 });
 
 
+//messages
+app.get('/messages', (req, res) => {
+    return res.send(Object.values(messages));
+})
+
+app.get('/messages/:messageId', (req, res) => {
+    return res.send(messages[req.params.messageId]);
+});
+
+app.post('/messages', (req, res) => {
+    const id = uuidv4();
+    const message = {
+        id,
+        text: req.body.text,
+        userId: req.me.id,
+    };
+
+    messages[id] = message;
+
+    return res.send(message);
+});
+
+app.delete('/messages/:messageId', (req, res) => {
+    const{
+        [req.params.messageId]: message,
+        ...otherMessages
+    } = messages;
+
+    messages = otherMessages;
+
+    return res.send(message);
+});
+
+
+//port
 app.listen(port, () => 
-    console.log('Example app listening on port 3000!'),
+    console.log(`Example app listening on port ${port}!`),
 );
